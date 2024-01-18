@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -71,7 +72,7 @@ func NewSigner(svc *kms.Client, id string, chainID *big.Int) (*Signer, error) {
 	return s, err
 }
 
-func CreateSigner(svc *kms.Client, chainID *big.Int) (*Signer, error) {
+func CreateSigner(svc *kms.Client, chainID *big.Int, prefix string) (*Signer, error) {
 	in := new(kms.CreateKeyInput)
 	in.KeySpec = kmstypes.KeySpecEccSecgP256k1
 	in.KeyUsage = kmstypes.KeyUsageTypeSignVerify
@@ -87,7 +88,11 @@ func CreateSigner(svc *kms.Client, chainID *big.Int) (*Signer, error) {
 		return nil, err
 	}
 
-	err = s.SetAlias(s.Address().String())
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix = prefix + "/"
+	}
+
+	err = s.SetAlias(prefix + s.Address().String())
 	return s, err
 }
 

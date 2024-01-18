@@ -17,6 +17,7 @@ import (
 
 var (
 	flagTags = true
+	prefix   = ""
 )
 
 func List(svc *kms.Client) (err error) {
@@ -74,7 +75,7 @@ func AddTag(svc *kms.Client, keyID, tagKey, tagValue string) (err error) {
 }
 
 func New(svc *kms.Client) (err error) {
-	signer, err := awseoa.CreateSigner(svc, big.NewInt(4))
+	signer, err := awseoa.CreateSigner(svc, big.NewInt(4), prefix)
 	if err != nil {
 		return
 	}
@@ -88,6 +89,7 @@ func usage() {
 	fmt.Println("   list     Show list of keys")
 	fmt.Println("            --tags: with tags")
 	fmt.Println("   new      Create key")
+	fmt.Println("            --prefix: alias prefix")
 	fmt.Println("   add-tags [keyID] [name:value] [name:value]...")
 	fmt.Println("            add tag to exist key")
 }
@@ -95,10 +97,11 @@ func usage() {
 func main() {
 	var err error
 	listFlag := flag.NewFlagSet("list", flag.ExitOnError)
-	_ = flag.NewFlagSet("new", flag.ExitOnError)
+	newFlag := flag.NewFlagSet("new", flag.ExitOnError)
 	_ = flag.NewFlagSet("add-tags", flag.ExitOnError)
 
 	listFlag.BoolVar(&flagTags, "tags", flagTags, "Show tags")
+	newFlag.StringVar(&prefix, "prefix", "", "Prefix of alias")
 
 	if len(os.Args) == 1 {
 		usage()
@@ -109,14 +112,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err := listFlag.Parse(os.Args[2:]); err != nil {
-		panic(err)
-	}
 
 	switch os.Args[1] {
 	case "list":
+		if err := listFlag.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		}
 		err = List(svc)
 	case "new":
+		if err := newFlag.Parse(os.Args[2:]); err != nil {
+			panic(err)
+		}
 		err = New(svc)
 	case "add-tags":
 		keyID := os.Args[2]
